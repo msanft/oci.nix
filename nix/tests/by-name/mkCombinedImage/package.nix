@@ -4,6 +4,7 @@
   runCommandNoCC,
   mkSimpleImage,
   cowsay,
+  jq,
 }:
 let
   alpineImg = pullImage {
@@ -16,19 +17,36 @@ let
     layers = [ cowsay ];
   };
 
+  config = {
+    Entrypoint = [ "/bin/cowsay" ];
+  };
+
   combinedImg = mkCombinedImage {
     name = "combined-alpine";
     images = [
       alpineImg
       nixImg
     ];
+    config = { inherit config; };
   };
 in
 runCommandNoCC "test-mkCombinedImage"
   {
-    nativeBuildInputs = [ combinedImg ];
+    nativeBuildInputs = [
+      combinedImg
+      jq
+    ];
   }
   ''
-    cat ${combinedImg}/index.json
+    digest="$(jq -r '.manifests[0].digest' ${combinedImg}/index.json)"
+    digestPath="${combinedImg}/blobs/sha256/''${digest#sha256:}"
+    configDigest="$(jq -r '.config.digest' "$digestPath")"
+    entrypoint="$(jq -r '.config.Entrypoint[0]' "${combinedImg}/blobs/sha256/''${configDigest#sha256:}")"
+    if [ "$entrypoint" != '${builtins.elemAt config.Entrypoint 0}' ]; then
+      echo "Error: Entrypoint is not set correctly in combined image"
+      echo "Expected: ${builtins.elemAt config.Entrypoint 0}"
+      echo "Got: $entrypoint"
+      exit 1
+    fi
     mkdir -p $out
   ''

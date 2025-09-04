@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -13,13 +14,50 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
+// baseImage is the base image for the combined image.
+var baseImage, _ = partial.UncompressedToImage(image{})
+
+type image struct{}
+
+// MediaType implements partial.UncompressedImageCore.
+func (i image) MediaType() (types.MediaType, error) {
+	return types.OCIManifestSchema1, nil
+}
+
+// RawConfigFile implements [partial.UncompressedImageCore].
+func (i image) RawConfigFile() ([]byte, error) {
+	return partial.RawConfigFile(i)
+}
+
+// ConfigFile implements [v1.Image].
+func (i image) ConfigFile() (*v1.ConfigFile, error) {
+	rawConfig, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		return nil, fmt.Errorf("reading config file %q: %v", os.Args[1], err)
+	}
+
+	configFile := &v1.ConfigFile{}
+	if err := json.Unmarshal(rawConfig, configFile); err != nil {
+		return nil, fmt.Errorf("parsing config file %q: %v", os.Args[1], err)
+	}
+
+	// Per go-containerregistry: Some clients check this.
+	configFile.RootFS.Type = "layers"
+
+	return configFile, nil
+}
+
+func (i image) LayerByDiffID(h v1.Hash) (partial.UncompressedLayer, error) {
+	return nil, fmt.Errorf("LayerByDiffID(%s): empty image", h)
+}
+
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatalf("Usage: %s IMAGE... OUTPUT", os.Args[0])
+	if len(os.Args) < 4 {
+		log.Fatalf("Usage: %s CONFIG IMAGE... OUTPUT", os.Args[0])
 	}
 
 	var images []v1.Image
-	for _, arg := range os.Args[1 : len(os.Args)-1] {
+	for _, arg := range os.Args[2 : len(os.Args)-1] {
 		layout, err := layout.FromPath(arg)
 		if err != nil {
 			log.Fatalf("loading image %q: %v", arg, err)
@@ -36,7 +74,7 @@ func main() {
 	}
 
 	// Convert Docker-defaulting empty image to OCI
-	base := scratchImage
+	base := baseImage
 	manifest, err := base.Manifest()
 	if err != nil {
 		log.Fatalf("getting base manifest: %v", err)
@@ -122,33 +160,4 @@ func extractImagesFromIndex(index v1.ImageIndex) ([]v1.Image, error) {
 		}
 	}
 	return images, nil
-}
-
-// scratchImage is a singleton empty image, think: FROM scratch.
-var scratchImage, _ = partial.UncompressedToImage(emptyImage{})
-
-type emptyImage struct{}
-
-// MediaType implements partial.UncompressedImageCore.
-func (i emptyImage) MediaType() (types.MediaType, error) {
-	return types.OCIManifestSchema1, nil
-}
-
-// RawConfigFile implements partial.UncompressedImageCore.
-func (i emptyImage) RawConfigFile() ([]byte, error) {
-	return partial.RawConfigFile(i)
-}
-
-// ConfigFile implements v1.Image.
-func (i emptyImage) ConfigFile() (*v1.ConfigFile, error) {
-	return &v1.ConfigFile{
-		RootFS: v1.RootFS{
-			// Some clients check this.
-			Type: "layers",
-		},
-	}, nil
-}
-
-func (i emptyImage) LayerByDiffID(h v1.Hash) (partial.UncompressedLayer, error) {
-	return nil, fmt.Errorf("LayerByDiffID(%s): empty image", h)
 }
