@@ -1,6 +1,6 @@
 module github.com/msanft/oci.nix
 
-go 1.24.6
+go 1.24.5
 
 require github.com/google/go-containerregistry v0.20.6
 
