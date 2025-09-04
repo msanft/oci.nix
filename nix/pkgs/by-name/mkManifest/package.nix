@@ -15,7 +15,6 @@
   # Annotations to add to the manifest.
   annotations ? { },
 }:
-
 let
   # Config for the image
   ociConfig = mkConfig { inherit layers config; };
@@ -48,7 +47,7 @@ let
   );
 in
 
-runCommand "oci-image-manifest"
+runCommand name
   {
     inherit manifest;
     blobDirs = lib.lists.map (layer: layer + "/blobs/sha256") (layers ++ [ ociConfig ]);

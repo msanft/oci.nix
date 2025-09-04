@@ -10,7 +10,6 @@
   # Configuration options for the image. (i.e. `config` key of the OCI config)
   config ? { },
 }:
-
 let
   diffIDs = lib.lists.map (layer: builtins.readFile (layer + "/DiffID")) layers;
   ociConfig = {
