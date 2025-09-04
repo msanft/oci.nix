@@ -1,6 +1,6 @@
 {
   mkLayer,
-  mkConfig,
+  mkManifest,
   hello,
   cowsay,
   runCommandNoCC,
@@ -12,18 +12,19 @@ let
       cowsay
     ];
   };
-  config = mkConfig {
+  manifest = mkManifest {
+    name = "test-manifest";
     layers = [ layer ];
     config = {
-      cmd = [ "/bin/hello" ];
+      "cmd" = "/bin/hello";
     };
   };
 in
-runCommandNoCC "test-mkConfig"
+runCommandNoCC "test-mkManifest"
   {
-    nativeBuildInputs = [ config ];
+    nativeBuildInputs = [ manifest ];
   }
   ''
-    cat ${config}/image-config.json
+    cat ${manifest}/image-manifest.json
     mkdir -p $out
   ''

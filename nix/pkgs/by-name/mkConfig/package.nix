@@ -5,9 +5,9 @@
   nix,
 }:
 {
-  # Layers is the list of (`mkLayer`-produced) layers to include in the config.
+  # List of (`mkLayer`-produced) layers to include in the config.
   layers ? [ ],
-  # Config is the set of configuration options for the image.
+  # Configuration options for the image. (i.e. `config` key of the OCI config)
   config ? { },
 }:
 
