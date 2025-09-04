@@ -27,7 +27,7 @@ let
 in
 runCommandNoCC name
   {
-    buildInputs = [ go-containerregistry ];
+    nativeBuildInputs = [ go-containerregistry ];
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
     outputHash = hash;

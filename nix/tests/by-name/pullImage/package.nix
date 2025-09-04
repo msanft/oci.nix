@@ -8,9 +8,9 @@ let
     hash = "sha256-nH3rohs65Y4ojVIdwIgaYVlNyYjiAw4oYEHwuGq9XmY=";
   };
 in
-runCommandNoCC "test-pullOCIImage"
+runCommandNoCC "test-pullImage"
   {
-    buildInputs = [ img ];
+    nativeBuildInputs = [ img ];
   }
   ''
     if ! test -f ${img}/oci-layout; then

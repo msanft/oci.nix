@@ -14,10 +14,10 @@ let
     files = sources;
   };
 in
-runCommandNoCC "test-pullOCIImage"
+runCommandNoCC "test-mkLayer"
   {
     inherit sources;
-    buildInputs = [ layer ];
+    nativeBuildInputs = [ layer ];
   }
   ''
     sources=($sources)
