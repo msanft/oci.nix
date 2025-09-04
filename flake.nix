@@ -15,23 +15,19 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          config = {
-            allowUnfree = true;
-            permittedInsecurePackages = [ "libsoup-2.74.3" ];
-          };
-
+          config.allowUnfree = true;
           overlays = [
             (_final: prev: (import ./nix/pkgs { inherit (prev) lib callPackage; }))
             (_final: prev: { tests = (import ./nix/tests { inherit (prev) lib callPackage; }); })
           ];
         };
       in
-      {
+      rec {
         legacyPackages = pkgs;
 
-        devShells = {
-          default = pkgs.callPackage ./nix/shell.nix { };
-        };
+        devShells.default = pkgs.callPackage ./nix/shell.nix { };
+
+        overlays.default = _final: prev: { oci-nix = legacyPackages; };
       }
     );
 }
