@@ -93,8 +93,7 @@ func main() {
 				log.Fatalf("getting media type: %v", err)
 			}
 			switch mediaType {
-			case types.OCILayer, types.OCILayerZStd, types.OCIUncompressedLayer,
-				types.DockerLayer, types.DockerUncompressedLayer:
+			case types.OCILayer, types.OCILayerZStd, types.OCIUncompressedLayer:
 				base, err = mutate.AppendLayers(base, l)
 				if err != nil {
 					log.Fatalf("appending layers: %v", err)
