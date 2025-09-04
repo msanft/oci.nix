@@ -1,5 +1,6 @@
-{ lib
-, callPackage
+{
+  lib,
+  callPackage,
 }:
 lib.packagesFromDirectoryRecursive {
   inherit callPackage;
