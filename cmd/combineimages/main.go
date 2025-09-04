@@ -19,6 +19,17 @@ var baseImage, _ = partial.UncompressedToImage(image{})
 
 type image struct{}
 
+// ociLayerWrapper wraps a layer and converts its media type to OCI format
+type ociLayerWrapper struct {
+	v1.Layer
+	mediaType types.MediaType
+}
+
+// MediaType returns the OCI media type for this layer
+func (w *ociLayerWrapper) MediaType() (types.MediaType, error) {
+	return w.mediaType, nil
+}
+
 // MediaType implements partial.UncompressedImageCore.
 func (i image) MediaType() (types.MediaType, error) {
 	return types.OCIManifestSchema1, nil
@@ -93,10 +104,27 @@ func main() {
 				log.Fatalf("getting media type: %v", err)
 			}
 			switch mediaType {
+			// Copy OCI layers as-is
 			case types.OCILayer, types.OCILayerZStd, types.OCIUncompressedLayer:
 				base, err = mutate.AppendLayers(base, l)
 				if err != nil {
 					log.Fatalf("appending layers: %v", err)
+				}
+			// Convert Docker layers to OCI
+			case types.DockerLayer, types.DockerUncompressedLayer:
+				// Convert Docker layer to OCI by wrapping with OCI media type
+				ociLayer := &ociLayerWrapper{
+					Layer: l,
+					mediaType: func() types.MediaType {
+						if mediaType == types.DockerLayer {
+							return types.OCILayer
+						}
+						return types.OCIUncompressedLayer
+					}(),
+				}
+				base, err = mutate.AppendLayers(base, ociLayer)
+				if err != nil {
+					log.Fatalf("appending converted layers: %v", err)
 				}
 			default:
 				log.Printf("Warning: skipping unsupported layer media type %q", mediaType)
