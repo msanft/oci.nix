@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/layout"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
@@ -34,7 +35,15 @@ func main() {
 		log.Fatalf("no images found in input layouts")
 	}
 
-	base := empty.Image
+	// Convert Docker-defaulting empty image to OCI
+	base := scratchImage
+	manifest, err := base.Manifest()
+	if err != nil {
+		log.Fatalf("getting base manifest: %v", err)
+	}
+	manifest.MediaType = types.OCIManifestSchema1
+	manifest.Config.MediaType = types.OCIConfigJSON
+
 	for _, img := range images {
 		layers, err := img.Layers()
 		if err != nil {
@@ -113,4 +122,33 @@ func extractImagesFromIndex(index v1.ImageIndex) ([]v1.Image, error) {
 		}
 	}
 	return images, nil
+}
+
+// scratchImage is a singleton empty image, think: FROM scratch.
+var scratchImage, _ = partial.UncompressedToImage(emptyImage{})
+
+type emptyImage struct{}
+
+// MediaType implements partial.UncompressedImageCore.
+func (i emptyImage) MediaType() (types.MediaType, error) {
+	return types.OCIManifestSchema1, nil
+}
+
+// RawConfigFile implements partial.UncompressedImageCore.
+func (i emptyImage) RawConfigFile() ([]byte, error) {
+	return partial.RawConfigFile(i)
+}
+
+// ConfigFile implements v1.Image.
+func (i emptyImage) ConfigFile() (*v1.ConfigFile, error) {
+	return &v1.ConfigFile{
+		RootFS: v1.RootFS{
+			// Some clients check this.
+			Type: "layers",
+		},
+	}, nil
+}
+
+func (i emptyImage) LayerByDiffID(h v1.Hash) (partial.UncompressedLayer, error) {
+	return nil, fmt.Errorf("LayerByDiffID(%s): empty image", h)
 }

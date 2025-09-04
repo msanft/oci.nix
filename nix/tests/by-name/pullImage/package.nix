@@ -1,16 +1,13 @@
-{
-  pullImage,
-  runCommandNoCC,
-}:
+{ pullOCIImage, runCommandNoCC }:
 let
-  img = pullImage {
+  img = pullOCIImage {
     url = "docker.io/library/alpine:3.22.1@sha256:4bcff63911fcb4448bd4fdacec207030997caf25e9bea4045fa6c8c44de311d1";
     hash = "sha256-nH3rohs65Y4ojVIdwIgaYVlNyYjiAw4oYEHwuGq9XmY=";
   };
 in
-runCommandNoCC "test-pullImage"
+runCommandNoCC "test-pullOCIImage"
   {
-    nativeBuildInputs = [ img ];
+    buildInputs = [ img ];
   }
   ''
     if ! test -f ${img}/oci-layout; then
