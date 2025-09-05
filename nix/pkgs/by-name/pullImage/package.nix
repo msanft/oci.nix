@@ -34,7 +34,7 @@ runCommandNoCC name
   }
   ''
     mkdir -p $out
-    crane pull ${url} $out --format oci ${if insecure then "--insecure" else ""} ${
+    crane pull ${url} $out --format oci --annotate-ref ${if insecure then "--insecure" else ""} ${
       if platform != null then "--platform " + platform else ""
     }
   ''
