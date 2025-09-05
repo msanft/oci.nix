@@ -2,7 +2,6 @@
   mkImage,
   mkManifest,
   mkLayer,
-  closureInfo,
 }:
 {
   # Name of the image.
@@ -17,12 +16,7 @@ mkImage {
   manifests = [
     (mkManifest {
       name = "${name}-manifest";
-      layers = builtins.map (
-        layer:
-        mkLayer {
-          files = [ (closureInfo { rootPaths = [ layer ]; }) ];
-        }
-      ) layers;
+      layers = builtins.map (layer: mkLayer { files = [ layer ]; }) layers;
     })
   ];
 }
